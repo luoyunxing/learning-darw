@@ -1,0 +1,10 @@
+{
+	"InstallScripts" : 
+	[
+		"C:/Users/lyx/Desktop/drawing/out/build/x64-Debug/cmake_install.cmake",
+		"C:/Users/lyx/Desktop/drawing/out/build/x64-Debug/wrapper/cmake_install.cmake",
+		"C:/Users/lyx/Desktop/drawing/out/build/x64-Debug/application/cmake_install.cmake",
+		"C:/Users/lyx/Desktop/drawing/out/build/x64-Debug/glframework/cmake_install.cmake"
+	],
+	"Parallel" : false
+}
