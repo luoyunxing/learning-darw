@@ -22,8 +22,8 @@ Texture* xiaoju_texture;
 Shader* shader = nullptr;
 
 perspectivegraphicCamera* camera = nullptr;
-Trackballcameracontrol* cameraControl = nullptr;
-//GameCameraControl* cameraControl = nullptr;
+//Trackballcameracontrol* cameraControl = nullptr;
+GameCameraControl* cameraControl = nullptr;
 
 //视口大小回调函数
 void onResize(int width, int height)
@@ -206,7 +206,8 @@ void prepareCamera()
 	//决定初始位置
 	camera->mPosition = glm::vec3(0.0f, 0.0f, 6.0f);
 
-	cameraControl = new Trackballcameracontrol();
+	//cameraControl = new Trackballcameracontrol();
+	cameraControl = new GameCameraControl();
 	cameraControl->setCamera(camera);
 
 };
