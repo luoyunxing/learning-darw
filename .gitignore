@@ -1,0 +1,30 @@
+cat > .gitignore <<'EOF'
+# Visual Studio
+.vs/
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+
+# CMake 构建目录
+out/
+build/
+cmake-build-*/
+
+# 编译产物
+*.exe
+*.dll
+*.pdb
+*.ilk
+*.obj
+*.lib
+
+# 临时文件
+ipch/
+*.log
+
+# thirdParty第三方库按需开启
+# thirdParty/
+EOF
+
+

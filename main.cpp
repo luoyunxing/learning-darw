@@ -1,17 +1,29 @@
-#include<iostream>
-#include<glad/glad.h>
-#include<GLFW/glfw3.h>
-#include<string>
-#include<assert.h>
-#include"wrapper/checkError.h"
-#include"application/application.h"
-#include"glframework/shader.h"
-#define STB_IMAGE_IMPLEMENTATION
-#include"application/stb_image.h"
+#include <iostream>
+#include <glad/glad.h>
+#include <GLFW/glfw3.h>
+#include <string>
+#include <assert.h>
+#include "wrapper/checkError.h"
+#include "application/application.h"
+#include "glframework/shader.h"
+#include "glframework/texture.h"
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/type_ptr.hpp>
+#include "application/camera/camera.h"
+#include "application/camera/perspectivegraphicCamera.h"
+#include "application/camera/trackballCameraControl.h"
+#include "application/camera/gameCameraControl.h"
+
 
 GLuint vao;
-GLuint texture;
+Texture* nanali_texture;
+Texture* xiaoju_texture;
 Shader* shader = nullptr;
+
+perspectivegraphicCamera* camera = nullptr;
+Trackballcameracontrol* cameraControl = nullptr;
+//GameCameraControl* cameraControl = nullptr;
 
 //视口大小回调函数
 void onResize(int width, int height)
@@ -23,9 +35,28 @@ void onResize(int width, int height)
 //键盘回调函数
 void keyCallback(int key, int action, int mods)
 {
-	std::cout << key << std::endl;
+	//std::cout << key << std::endl;
+	cameraControl->onKey(key, action, mods);
 }
 
+//鼠标按键回调函数
+void mouseCallback(int button, int action, int mod)
+{
+	//std::cout << button << std::endl;
+
+	double x, y;
+	Application::getInstance()->getCursorPosition(&x, &y);
+	cameraControl->onMouse(button, action, x, y);
+}
+
+//光标位置回调函数
+void cursorCallback(double xpos, double ypos)
+{
+	//std::cout << xpos <<   "  " << ypos << std::endl;
+	cameraControl->onCursor(xpos, ypos);
+}
+
+//创建着色器
 void prepareShader()
 {
 	shader = new Shader("assets/shaders/vertex.glsl", "assets/shaders/fragment.glsl");
@@ -35,16 +66,26 @@ void prepareShader()
 void prepareSingleBufferVBO()
 {
 	//顶点数据
-	float posiVBO[36] = {
+	/*float posiVBO[36] = {
 		-0.5f ,-0.5f, 0.0f,
 		0.5f ,-0.5f, 0.0f,
 		0.0f ,0.5f, 0.0f,
+		0.5f , 0.5f , 0.0f
+	};*/
+
+	//非NDC坐标顶点数据
+	float posiVBO[36] = {
+		-2.0f , 0.0f , 0.0f,
+		2.0f , 0.0f , 0.0f,
+		0.0f , 2.0f , 0.0f
 	};
+
 	//uv数据
-	float uvs[6] = {
+	float uvs[8] = {
 		0.0f,0.0f,
 		1.0f, 0.0f,
 		0.5f, 1.0f,
+		1.0f, 1.0f
 	};
 
 	//颜色数据
@@ -55,8 +96,9 @@ void prepareSingleBufferVBO()
 	};
 
 	//ebo数据
-	unsigned int indices[3] = {
-		0 , 1 , 2
+	unsigned int indices[6] = {
+		0 , 1 , 2,
+		2 , 1 , 3
 	};
 
 	//创建vbo,并绑定
@@ -125,7 +167,12 @@ void render()
 	shader->setFloat("time", glfwGetTime());
 	shader->setFloat("speed", 10.0);
 	shader->setColor("uColor", 1, 1, 1);
-	//shader->setInt("sampler", 0);
+
+	shader->setInt("nanali_sampler", 0);
+	shader->setInt("xiaoju_sampler", 1);
+	//shader->setMatrix44("transform", transform);
+	shader->setMatrix44("viewMatrix", camera->getViewMatrix());
+	shader->setMatrix44("projectionMatrix",camera->getprojectionMatrix());
 
 	//绑定到当前的vao
 	GL_CALL(glBindVertexArray(vao));
@@ -144,43 +191,26 @@ void render()
 //纹理读取
 void prepareTexture()
 {
-	//---------stbImage 读取图片-------------//
- 
-	//图片 宽度 ， 高度 ， rgba还是rab格式
-	int width, height, channels;
-
-	//反转y轴
-	stbi_set_flip_vertically_on_load(true);
-
-	unsigned char* data = stbi_load("assets/texture/xiaojuzhihua.png", &width, &height, &channels, STBI_rgb_alpha);
-
-
-	//生成纹理并激活单元绑定
-	glGenTextures(1, &texture);
-
-	//激活纹理单元
-	glActiveTexture(GL_TEXTURE0);
-
-	//绑定纹理对象
-	glBindTexture(GL_TEXTURE_2D, texture);
-
-	//传输纹理数据   同时开辟显存
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
-
-	//释放数据
-	stbi_image_free(data);
-
-	//设置纹理过滤
-	//当纹理像素过低时用插值算法过滤
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-	//更高的时候则用精准过滤
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-
-	//设置纹理的包裹方式
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+	std::string path = "assets/texture/xiaojuzhihua.png";
+	xiaoju_texture = new Texture(path.c_str(), 1);
+	nanali_texture = new Texture("assets/texture/nanali.png", 0);
 
 }
+
+//设置摄像机矩阵
+void prepareCamera()
+{
+	float aspect = static_cast<float>(Application::getInstance()->getWidth()) / static_cast<float>(Application::getInstance()->getHeight());
+	camera = new perspectivegraphicCamera(60.0f, aspect, 0.1f, 1000.0f);
+
+	//决定初始位置
+	camera->mPosition = glm::vec3(0.0f, 0.0f, 6.0f);
+
+	cameraControl = new Trackballcameracontrol();
+	cameraControl->setCamera(camera);
+
+};
+
 
 int main()
 {
@@ -196,6 +226,12 @@ int main()
 	//键盘输入回调函数
 	Application::getInstance()->setKeyBoradCallback(keyCallback);
 
+	//鼠标按键回调函数
+	Application::getInstance()->setMouseCallback(mouseCallback);
+
+	//光标位置回调函数
+	Application::getInstance()->setCursorCallback(cursorCallback);
+
 	//设置OpenGL视口
 	GL_CALL(glViewport(0, 0, 800, 600));
 
@@ -209,16 +245,25 @@ int main()
 	prepareShader();
 
 	//读取纹理
-	//prepareTexture();
+	prepareTexture();
+
+	//设置摄像机矩阵
+	prepareCamera();
 
 	//执行窗体循环
 	while (Application::getInstance()->update())
 	{
+		cameraControl->update();
 		//绘制
 		render();
+
+
 	}
 
 	//清理操作
+	delete nanali_texture;
+	delete xiaoju_texture;
+
 	Application::getInstance()->destroy();
 
 	return 0;

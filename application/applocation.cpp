@@ -56,6 +56,10 @@ bool Application::init(const int & width , const int & height)
 	glfwSetFramebufferSizeCallback(m_window, frameBufferSizeCallBack);
 	//设置键盘监听
 	glfwSetKeyCallback(m_window, keyCallBack);
+	//设置鼠标监听
+	glfwSetMouseButtonCallback(m_window, mouseCallback);
+	//设置光标监听
+	glfwSetCursorPosCallback(m_window, cursorCallback);
 
 	return true;
 }
@@ -97,8 +101,30 @@ void  Application::frameBufferSizeCallBack(GLFWwindow* window, int width, int  h
 //键盘响应回调函数
 void Application::keyCallBack(GLFWwindow* window, int key, int scancode, int action, int mods)
 {
-	if (Application::getInstance()->keyCallBack != nullptr)
+	if (Application::getInstance()->m_KeyBoradCallback != nullptr)
 	{
 		Application::getInstance()->m_KeyBoradCallback(key, action, mods);
 	}
+}
+
+//鼠标按键回调函数
+void Application::mouseCallback(GLFWwindow* window, int button, int action, int mod)
+{
+	if (Application::getInstance()->m_MouseCallback != nullptr)
+	{
+		Application::getInstance()->m_MouseCallback(button, action, mod);
+	}
+}
+//光标回调函数
+void Application::cursorCallback(GLFWwindow* window, double xpos, double ypos)
+{
+	if (Application::getInstance()->m_CursorCallback != nullptr)
+	{
+		Application::getInstance()->m_CursorCallback(xpos, ypos);
+	}
+}
+
+void Application::getCursorPosition(double* x, double* y)
+{
+	glfwGetCursorPos(m_window, x, y);
 }
