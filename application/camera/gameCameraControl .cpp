@@ -64,6 +64,8 @@ void GameCameraControl::update()
 
 	glm::vec3 right = mCamera->mRight;
 
+	glm::vec3 up = mCamera->mUp;
+
 	if (mKeyMap[GLFW_KEY_W])
 	{
 		direction += front;
@@ -82,6 +84,16 @@ void GameCameraControl::update()
 	if (mKeyMap[GLFW_KEY_D])
 	{
 		direction += right;
+	}
+
+	if (mKeyMap[GLFW_KEY_SPACE])
+	{
+		direction += up;
+	}
+
+	if (mKeyMap[GLFW_KEY_LEFT_SHIFT])
+	{
+		direction -= up;
 	}
 
 	if (glm::length(direction) != 0)
