@@ -1,3 +1,4 @@
+#include "wrapper/OnOff.h"
 #include <iostream>
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
@@ -16,14 +17,25 @@
 #include "application/camera/gameCameraControl.h"
 
 
+
 GLuint vao;
 Texture* nanali_texture;
 Texture* xiaoju_texture;
 Shader* shader = nullptr;
 
 perspectivegraphicCamera* camera = nullptr;
-//Trackballcameracontrol* cameraControl = nullptr;
+
+//轨迹球相机
+
+#if !ENABLE_CAMERA_CODE
+Trackballcameracontrol* cameraControl = nullptr;
+#endif
+
+//游戏相机
+
+#if ENABLE_CAMERA_CODE
 GameCameraControl* cameraControl = nullptr;
+#endif
 
 //视口大小回调函数
 void onResize(int width, int height)
@@ -206,8 +218,14 @@ void prepareCamera()
 	//决定初始位置
 	camera->mPosition = glm::vec3(0.0f, 0.0f, 6.0f);
 
-	//cameraControl = new Trackballcameracontrol();
+#if !ENABLE_CAMERA_CODE
+	cameraControl = new Trackballcameracontrol();
+#endif
+
+#if ENABLE_CAMERA_CODE
 	cameraControl = new GameCameraControl();
+#endif
+
 	cameraControl->setCamera(camera);
 
 };
