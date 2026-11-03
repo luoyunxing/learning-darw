@@ -64,5 +64,10 @@ void CameraControl::update()
 
 }
 
+void CameraControl::onScroll(double offset)
+{
+	
+}
+
 
 

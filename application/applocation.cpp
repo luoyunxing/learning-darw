@@ -60,6 +60,8 @@ bool Application::init(const int & width , const int & height)
 	glfwSetMouseButtonCallback(m_window, mouseCallback);
 	//设置光标监听
 	glfwSetCursorPosCallback(m_window, cursorCallback);
+	//设置鼠标滚轮监听
+	glfwSetScrollCallback(m_window, scrollCallback);
 
 	return true;
 }
@@ -121,6 +123,14 @@ void Application::cursorCallback(GLFWwindow* window, double xpos, double ypos)
 	if (Application::getInstance()->m_CursorCallback != nullptr)
 	{
 		Application::getInstance()->m_CursorCallback(xpos, ypos);
+	}
+}
+//滚轮回调函数
+void Application::scrollCallback(GLFWwindow* window, double xoffset, double yoffset)
+{
+	if (Application::getInstance()->m_ScrollCallback != nullptr)
+	{
+		Application::getInstance()->m_ScrollCallback(xoffset, yoffset);
 	}
 }
 

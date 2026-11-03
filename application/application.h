@@ -13,6 +13,7 @@ using ResizeCallback = void(*)(int width, int height);
 using KeyBoradCallback = void(*)(int key, int action, int mods);
 using MouseCallback = void (*)(int button, int action, int mod);
 using CursorCallback = void (*)(double xpos, double ypos);
+using ScrollCallback = void (*)(double xoffset, double yoffset);
 
 class Application
 {
@@ -57,6 +58,11 @@ public:
 	{
 		m_CursorCallback = callback;
 	}
+	//设置滚轮回调
+	void setScrollCallback(ScrollCallback callback)
+	{
+		m_ScrollCallback = callback;
+	}
 
 private:
 	//窗口大小回调函数
@@ -67,7 +73,8 @@ private:
 	static void mouseCallback(GLFWwindow* window, int button, int action, int mod);
 	//光标回调函数
 	static void cursorCallback(GLFWwindow* window, double xpos, double ypos);
-
+	//滚轮回调函数
+	static void scrollCallback(GLFWwindow* window, double xoffset, double yoffset);
 private:
 	//全局唯一静态实例
 	static Application* mInstance;
@@ -81,6 +88,7 @@ private:
 	KeyBoradCallback m_KeyBoradCallback{ nullptr };
 	MouseCallback m_MouseCallback{ nullptr };
 	CursorCallback m_CursorCallback{ nullptr };
+	ScrollCallback m_ScrollCallback{ nullptr };
 
 	Application();
 };

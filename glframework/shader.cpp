@@ -139,6 +139,15 @@ void Shader::setMatrix44(const std::string& name, glm::mat4 value)
 	glUniformMatrix4fv(location, 1, GL_FALSE, glm::value_ptr(value));
 }
 
+void Shader::setVector3(const std::string& name, glm::vec3 value)
+{
+	//通过名称拿到uniform变量的位置location
+	GLint location = GL_CALL(glGetUniformLocation(m_program, name.c_str()));
+
+	//通过location更新uniform变量的值
+	GL_CALL(glUniform3f(location, value.x, value.y, value.z));
+}
+
 void Shader::checkShaderError(GLuint target, std::string type)
 {
 

@@ -23,19 +23,22 @@ Texture* xiaoju_texture = nullptr;
 Texture* earth_texture = nullptr;
 Shader* shader = nullptr;
 
+//初始模型矩阵
+glm::mat4 modelMatrix = glm::mat4(1.0f);
+
 perspectivegraphicCamera* camera = nullptr;
-
 //轨迹球相机
-
 #if !ENABLE_CAMERA_CODE
 Trackballcameracontrol* cameraControl = nullptr;
 #endif
-
 //游戏相机
-
 #if ENABLE_CAMERA_CODE
 GameCameraControl* cameraControl = nullptr;
 #endif
+
+//平行光
+glm::vec3 LightDirection = glm::vec3(-0.8f, -1.0f, -1.0f);
+glm::vec3 LightColor = glm::vec3(1.0f, 0.98f, 0.96f);
 
 //视口大小回调函数
 void onResize(int width, int height)
@@ -68,6 +71,12 @@ void cursorCallback(double xpos, double ypos)
 	cameraControl->onCursor(xpos, ypos);
 }
 
+void scrollCallback(double xoffset, double yoffset)
+{
+	// 将滚轮偏移量传给 cameraControl
+	cameraControl->onScroll(yoffset);
+}
+
 //创建着色器
 void prepareShader()
 {
@@ -77,7 +86,7 @@ void prepareShader()
 //创建的vao
 void prepareVao()
 {
-	geometry = geometry->createFlat(3.0f ,5.0f);
+	geometry = geometry->createSphere(3.0f );
 }
 
 //渲染操作
@@ -94,12 +103,21 @@ void render()
 	shader->setFloat("speed", 10.0);
 	shader->setColor("uColor", 1, 1, 1);
 
+	//纹理
 	shader->setInt("nanali_sampler", 0);
 	shader->setInt("xiaoju_sampler", 1);
 	shader->setInt("earth_sampler", 2);
-	//shader->setMatrix44("transform", transform);
+
+	//平行光
+	shader->setVector3("LightDirection", LightDirection);
+	shader->setVector3("LightColor", LightColor);
+
+	//相机矩阵
+	shader->setMatrix44("modelMatrix", modelMatrix);
+	shader->setVector3("CameraPosition", camera->mPosition); //相机位置
 	shader->setMatrix44("viewMatrix", camera->getViewMatrix());
 	shader->setMatrix44("projectionMatrix",camera->getprojectionMatrix());
+
 
 	//绑定到当前的vao
 	GL_CALL(glBindVertexArray(geometry->getVao()));
@@ -172,6 +190,9 @@ int main()
 	//光标位置回调函数
 	Application::getInstance()->setCursorCallback(cursorCallback);
 
+	//鼠标滚轮回调函数
+	Application::getInstance()->setScrollCallback(scrollCallback);
+
 	//设置OpenGL视口
 	GL_CALL(glViewport(0, 0, 800, 600));
 
@@ -189,7 +210,7 @@ int main()
 
 	//读取纹理
 	prepareTexture();
-
+	
 	//设置摄像机矩阵
 	prepareCamera();
 

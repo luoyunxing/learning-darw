@@ -9,6 +9,7 @@ public:
 	~Trackballcameracontrol();
 
 	void onCursor(double xpos, double ypos)override;
+	void onScroll(double offset) override;
 
 private:
 	//沿着经线方向的角

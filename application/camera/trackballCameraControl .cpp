@@ -55,3 +55,23 @@ void Trackballcameracontrol::yaw(float angle)
 	mCamera->mRight = mat * glm::vec4(mCamera->mRight, 0.0f);
 	mCamera->mPosition = mat * glm::vec4(mCamera->mPosition, 1.0f);
 }
+
+void Trackballcameracontrol::onScroll(double offset)
+{
+	if (mCamera == nullptr) return;
+
+	// 缩放灵敏度，控制滚轮一次移动的距离
+	float scrollSpeed = 0.5f;
+
+	// 获取相机看向的方向向量 (视线的反方向)
+	// 假设你有 mRight 和 mUp，那么前方向可以通过叉乘计算出来：
+	// 注意：根据你的坐标系（右手系/左手系），可能需要调整正负号
+	glm::vec3 forward = glm::cross(mCamera->mRight, mCamera->mUp);
+
+	// 防止 forward 受到浮点数精度影响失去单位长度
+	forward = glm::normalize(forward);
+
+	// 滚轮向上滚动(offset > 0)，相机向前移动（拉近）
+	// 滚轮向下滚动(offset < 0)，相机向后移动（推远）
+	mCamera->mPosition += forward * float(offset) * scrollSpeed;
+}
