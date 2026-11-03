@@ -28,24 +28,30 @@ void main() {
   vec4 nanali_Color = texture(nanali_sampler, uv);
   vec4 xiaoju_Color = texture(xiaoju_sampler, uv);
   vec4 earth_Color = texture(earth_sampler, uv);
-  vec4 finalColor = nanali_Color * 0.2 + xiaoju_Color * 0.8;
+  vec4 mix_Color = nanali_Color * 0.2 + xiaoju_Color * 0.8;
 
   // 物体颜色
-  vec3 ObjectColor = nanali_Color.xyz;
+  vec3 ObjectColor = earth_Color.xyz;
 
-  // 漫反射
+  // 计算光照所
   vec3 normalN = normalize(normal);
   vec3 lightDirN = normalize(LightDirection);
-  float diffuse = clamp(dot(-lightDirN, normalN), 0.0, 1.0);
 
   // 实现漫反射
-  vec3 final_Color = ObjectColor * LightColor * diffuse;
+  float diffuse = clamp(dot(-lightDirN, normalN), 0.0, 1.0);
+  vec3 diffuseColor = ObjectColor * LightColor * diffuse;
 
-  // FragColor = vec4(final_Color.rgb, 1.0);
+  // 实现高光反射
+  vec3 viewDir = normalize(CameraPosition - worldposition);
+  vec3 halfDir = normalize(-lightDirN + viewDir);
+  float NdotH = clamp(dot(normalN, halfDir), 0.0, 1.0);
+  float specular = pow(NdotH, 8.0) * 0.45;
+  // 菲涅尔：正对视角强，掠射角弱，让高光"收边"更自然
+  float fresnel = pow(1.0 - clamp(dot(normalN, viewDir), 0.0, 1.0), 3.0);
+  specular *= mix(1.0, 0.5, fresnel);
+  vec3 specularColor = LightColor * specular;
 
-  //
-  vec3 viewDir = normalize(worldposition - CameraPosition);
-  viewDir = clamp(-viewDir, 0.0, 1.0);
-  // FragColor = vec4(final_Color, 1.0);
-  FragColor = vec4(viewDir, 1.0);
+  vec3 finalColor = specularColor + diffuseColor;
+
+  FragColor = vec4(finalColor.rgb, 1.0);
 }
