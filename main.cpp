@@ -36,9 +36,15 @@ Trackballcameracontrol* cameraControl = nullptr;
 GameCameraControl* cameraControl = nullptr;
 #endif
 
-//平行光
-glm::vec3 LightDirection = glm::vec3(-0.8f, -1.0f, -1.0f);
+//光
+glm::vec3 LightDirection = glm::vec3(-0.8f, -1.0f, -1.0f);  //平行光
 glm::vec3 LightColor = glm::vec3(1.0f, 0.98f, 0.96f);
+glm::vec3 AmbientColor = glm::vec3(0.3f, 0.3f, 0.32f);     //环境光
+
+glm::float32  SpotSize = 32.0f;      //光斑大小（1-128）值越大光斑越小
+glm::float32  Instensity = 0.005f;   //光的强度（0.1-1.0）正相关
+glm::float32  LightEdge = 0.6f;      //光边缘衰减（0.2-1.0）
+glm::float32  FresnelPower = 1.0f;   //光收边过度（1-8）柔和->突然
 
 //视口大小回调函数
 void onResize(int width, int height)
@@ -108,9 +114,14 @@ void render()
 	shader->setInt("xiaoju_sampler", 1);
 	shader->setInt("earth_sampler", 2);
 
-	//平行光
+	//光
 	shader->setVector3("LightDirection", LightDirection);
 	shader->setVector3("LightColor", LightColor);
+	shader->setVector3("AmbientColor", AmbientColor);
+	shader->setFloat("SpotSize", SpotSize);
+	shader->setFloat("Instensity", Instensity);
+	shader->setFloat("LightEdge", LightEdge);
+	shader->setFloat("FresnelPower", FresnelPower);
 
 	//相机矩阵
 	shader->setMatrix44("modelMatrix", modelMatrix);

@@ -73,5 +73,5 @@ void Trackballcameracontrol::onScroll(double offset)
 
 	// 滚轮向上滚动(offset > 0)，相机向前移动（拉近）
 	// 滚轮向下滚动(offset < 0)，相机向后移动（推远）
-	mCamera->mPosition += forward * float(offset) * scrollSpeed;
+	mCamera->mPosition -= forward * float(offset) * scrollSpeed;
 }

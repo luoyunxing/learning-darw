@@ -13,6 +13,13 @@ uniform sampler2D earth_sampler;
 // 平行光
 uniform vec3 LightDirection;
 uniform vec3 LightColor;
+// 环境光
+uniform vec3 AmbientColor;
+// 光斑大小、强度
+uniform float SpotSize;
+uniform float Instensity;
+uniform float LightEdge;
+uniform float FresnelPower;
 
 //
 uniform float time;
@@ -33,6 +40,9 @@ void main() {
   // 物体颜色
   vec3 ObjectColor = earth_Color.xyz;
 
+  // 环境光
+  vec3 ambientColor = ObjectColor * AmbientColor;
+
   // 计算光照所
   vec3 normalN = normalize(normal);
   vec3 lightDirN = normalize(LightDirection);
@@ -45,13 +55,14 @@ void main() {
   vec3 viewDir = normalize(CameraPosition - worldposition);
   vec3 halfDir = normalize(-lightDirN + viewDir);
   float NdotH = clamp(dot(normalN, halfDir), 0.0, 1.0);
-  float specular = pow(NdotH, 8.0) * 0.45;
+  float specular = pow(NdotH, SpotSize) * Instensity;
   // 菲涅尔：正对视角强，掠射角弱，让高光"收边"更自然
-  float fresnel = pow(1.0 - clamp(dot(normalN, viewDir), 0.0, 1.0), 3.0);
-  specular *= mix(1.0, 0.5, fresnel);
+  float fresnel =
+      pow(1.0 - clamp(dot(normalN, viewDir), 0.0, 1.0), FresnelPower);
+  specular *= mix(1.0, LightEdge, fresnel);
   vec3 specularColor = LightColor * specular;
 
-  vec3 finalColor = specularColor + diffuseColor;
+  vec3 finalColor = specularColor + diffuseColor + ambientColor;
 
   FragColor = vec4(finalColor.rgb, 1.0);
 }
