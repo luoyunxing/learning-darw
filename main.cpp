@@ -36,15 +36,17 @@ Trackballcameracontrol* cameraControl = nullptr;
 GameCameraControl* cameraControl = nullptr;
 #endif
 
-//光
-glm::vec3 LightDirection = glm::vec3(-0.8f, -1.0f, -1.0f);  //平行光
-glm::vec3 LightColor = glm::vec3(1.0f, 0.98f, 0.96f);
-glm::vec3 AmbientColor = glm::vec3(0.3f, 0.3f, 0.32f);     //环境光
-
-glm::float32  SpotSize = 32.0f;      //光斑大小（1-128）值越大光斑越小
-glm::float32  Instensity = 0.005f;   //光的强度（0.1-1.0）正相关
-glm::float32  LightEdge = 0.6f;      //光边缘衰减（0.2-1.0）
-glm::float32  FresnelPower = 1.0f;   //光收边过度（1-8）柔和->突然
+// ██████████████████████████████████████████████████████████████
+// █                        LIGHT PARAMS                         █
+// ██████████████████████████████████████████████████████████████
+glm::vec3 LightDirection = glm::vec3(-1.0f, -1.0f, -1.0f);  // 平行光方向
+glm::vec3 LightColor = glm::vec3(1.0f, 0.98f, 0.96f);   // 主光
+glm::vec3 AmbientColor = glm::vec3(0.3f, 0.3f, 0.32f);    // 环境光
+glm::float32 SpotSize = 32.0f;                           // 光斑大小(1~128) 越大光斑越小
+glm::float32 Instensity = 0.005f;                          // 光强度
+glm::float32 LightEdge = 0.6f;                            // 边缘衰减
+glm::float32 FresnelPower = 1.0f;                            // 菲涅尔过渡 1柔和→8锐利
+// ██████████████████████████████████████████████████████████████
 
 //视口大小回调函数
 void onResize(int width, int height)
@@ -95,10 +97,16 @@ void prepareVao()
 	geometry = geometry->createSphere(3.0f );
 }
 
+//模型操作
+void dotransform()
+{
+	modelMatrix = glm::rotate(modelMatrix, glm::radians(0.1f), glm::vec3(-1, 1, 1));
+}
+
 //渲染操作
 void render()
 {
-	//画布清理
+	//画布清理 
 	GL_CALL(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));
 
 	//绑定到当前的program
@@ -124,11 +132,14 @@ void render()
 	shader->setFloat("FresnelPower", FresnelPower);
 
 	//相机矩阵
-	shader->setMatrix44("modelMatrix", modelMatrix);
 	shader->setVector3("CameraPosition", camera->mPosition); //相机位置
 	shader->setMatrix44("viewMatrix", camera->getViewMatrix());
 	shader->setMatrix44("projectionMatrix",camera->getprojectionMatrix());
-
+	//模型矩阵
+	shader->setMatrix44("modelMatrix", modelMatrix);
+	//法线矩阵
+	glm::mat3 normalMatrix = glm::transpose(glm::inverse(glm::mat3(modelMatrix)));
+	shader->setMatrix33("normalMatrix", normalMatrix);
 
 	//绑定到当前的vao
 	GL_CALL(glBindVertexArray(geometry->getVao()));
@@ -228,6 +239,7 @@ int main()
 	//执行窗体循环
 	while (Application::getInstance()->update())
 	{
+		dotransform();
 		cameraControl->update();
 		//绘制
 		render();

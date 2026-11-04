@@ -41,6 +41,8 @@ public:
 
 	void setMatrix44(const std::string& name, glm::mat4 value);
 
+	void setMatrix33(const std::string& name, glm::mat3 value);
+
 	void setVector3(const std::string& name, glm::vec3 value);
 
 private:

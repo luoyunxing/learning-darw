@@ -9,6 +9,7 @@ uniform float speed;
 uniform mat4 modelMatrix;
 uniform mat4 viewMatrix;
 uniform mat4 projectionMatrix;
+uniform mat3 normalMatrix;
 
 out vec3 color;
 out vec2 uv;
@@ -26,5 +27,5 @@ void main() {
   worldposition = transformPosition.xyz;
   color = aColors * (cos(time) + 1.0) / 2.0;
   uv = aUV;
-  normal = aNormal;
+  normal = normalMatrix * aNormal;
 }
