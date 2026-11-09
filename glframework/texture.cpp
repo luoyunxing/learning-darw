@@ -55,3 +55,10 @@ Texture::~Texture()
 		glDeleteTextures(1, &m_Texture);
 	}
 }
+
+void Texture::bind() 
+{
+	//先切换纹理单元,然后绑定texture对象
+	glActiveTexture(GL_TEXTURE0 + m_TextureUnit);
+	glBindTexture(GL_TEXTURE_2D, m_Texture);
+}

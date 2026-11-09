@@ -11,6 +11,10 @@ public:
 	~PhoneMeterial();
 
 public:
+	//meterial就是物体表面的材质
+	//贴图  ， 物体表面的高光
+
+
+	//贴图
 	Texture* mDiffuse{ nullptr };
-	float mShiness{ 1.0f };
 };

@@ -17,6 +17,8 @@ public:
 
 	~Texture();
 
+	void bind();
+
 private:
 	GLuint m_Texture{ 0 };
 	int m_Width { 0 };

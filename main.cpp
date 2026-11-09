@@ -16,16 +16,16 @@
 #include "application/camera/trackballCameraControl.h"
 #include "application/camera/gameCameraControl.h"
 #include "glframework/geometry.h"
+#include "glframework/meterial/phonemeterial.h"
+#include "glframework/object.h"
+#include "glframework/mesh.h"
+#include "glframework/render/render.h"
 
+Render* render = nullptr;
 Geometry* geometry = nullptr;
-Texture* nanali_texture = nullptr;
-Texture* xiaoju_texture = nullptr;
-Texture* earth_texture = nullptr;
-Shader* shader = nullptr;
-
-//初始模型矩阵
-glm::mat4 modelMatrix = glm::mat4(1.0f);
-
+DirectionLight* dirLight = nullptr;
+AmbientLight* ambientLight = nullptr;
+std::vector<Mesh*> meshes{};
 perspectivegraphicCamera* camera = nullptr;
 //轨迹球相机
 #if !ENABLE_CAMERA_CODE
@@ -37,7 +37,7 @@ GameCameraControl* cameraControl = nullptr;
 #endif
 
 // ██████████████████████████████████████████████████████████████
-// █                        LIGHT PARAMS                         █
+// █                        这些已经没用了，到后面直接用mgui                         █
 // ██████████████████████████████████████████████████████████████
 glm::vec3 LightDirection = glm::vec3(-1.0f, -1.0f, -1.0f);  // 平行光方向
 glm::vec3 LightColor = glm::vec3(1.0f, 0.98f, 0.96f);   // 主光
@@ -46,6 +46,8 @@ glm::float32 SpotSize = 32.0f;                           // 光斑大小(1~128) 
 glm::float32 Instensity = 0.005f;                          // 光强度
 glm::float32 LightEdge = 0.6f;                            // 边缘衰减
 glm::float32 FresnelPower = 1.0f;                            // 菲涅尔过渡 1柔和→8锐利
+//设置旋转
+
 // ██████████████████████████████████████████████████████████████
 
 //视口大小回调函数
@@ -79,95 +81,27 @@ void cursorCallback(double xpos, double ypos)
 	cameraControl->onCursor(xpos, ypos);
 }
 
+//滚轮回调函数
 void scrollCallback(double xoffset, double yoffset)
 {
 	// 将滚轮偏移量传给 cameraControl
 	cameraControl->onScroll(yoffset);
 }
 
-//创建着色器
-void prepareShader()
+void prepare()
 {
-	shader = new Shader("assets/shaders/vertex.glsl", "assets/shaders/fragment.glsl");
-}
+	render = new Render();
+	//创建几何体
+	geometry = Geometry::createSphere(3.0f);
+	//创建材质
+	PhoneMeterial* meterial = new PhoneMeterial();
+	meterial->mDiffuse = new Texture("assets/texture/earth.png", 0);
 
-//创建的vao
-void prepareVao()
-{
-	geometry = geometry->createSphere(3.0f );
-}
-
-//模型操作
-void dotransform()
-{
-	modelMatrix = glm::rotate(modelMatrix, glm::radians(0.1f), glm::vec3(-1, 1, 1));
-}
-
-//渲染操作
-void render()
-{
-	//画布清理 
-	GL_CALL(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));
-
-	//绑定到当前的program
-	shader->begin();
-
-	//更新uniform变量 time
-	shader->setFloat("time", glfwGetTime());
-	shader->setFloat("speed", 10.0);
-	shader->setColor("uColor", 1, 1, 1);
-
-	//纹理
-	shader->setInt("nanali_sampler", 0);
-	shader->setInt("xiaoju_sampler", 1);
-	shader->setInt("earth_sampler", 2);
-
-	//光
-	shader->setVector3("LightDirection", LightDirection);
-	shader->setVector3("LightColor", LightColor);
-	shader->setVector3("AmbientColor", AmbientColor);
-	shader->setFloat("SpotSize", SpotSize);
-	shader->setFloat("Instensity", Instensity);
-	shader->setFloat("LightEdge", LightEdge);
-	shader->setFloat("FresnelPower", FresnelPower);
-
-	//相机矩阵
-	shader->setVector3("CameraPosition", camera->mPosition); //相机位置
-	shader->setMatrix44("viewMatrix", camera->getViewMatrix());
-	shader->setMatrix44("projectionMatrix",camera->getprojectionMatrix());
-	//模型矩阵
-	shader->setMatrix44("modelMatrix", modelMatrix);
-	//法线矩阵
-	glm::mat3 normalMatrix = glm::transpose(glm::inverse(glm::mat3(modelMatrix)));
-	shader->setMatrix33("normalMatrix", normalMatrix);
-
-	//绑定到当前的vao
-	GL_CALL(glBindVertexArray(geometry->getVao()));
-
-	//执行绘制
-	glDrawElements(GL_TRIANGLES, geometry->getIndicesCount(), GL_UNSIGNED_INT, 0);
-	//glDrawArrays(GL_TRIANGLE_STRIP, 0, 3);
-	
-	//解绑vao
-	GL_CALL(glBindVertexArray(0));
-
-	//解绑program
-	shader->end();
-}	
-
-//纹理读取
-void prepareTexture()
-{
-	std::string path = "assets/texture/xiaojuzhihua.png";
-	xiaoju_texture = new Texture(path.c_str(), 1);
-	nanali_texture = new Texture("assets/texture/nanali.png", 0);
-	earth_texture = new Texture("assets/texture/earth.png", 2);
-}
-//深度测试
-void perpareState()
-{
-	glEnable(GL_DEPTH_TEST);
-	glDepthFunc(GL_LESS);
+	//装入mesh等待渲染
+	Mesh* mesh = new Mesh(geometry, meterial);
+	meshes.push_back(mesh);
+	dirLight = new DirectionLight();
+	ambientLight = new AmbientLight();
 }
 
 //设置摄像机矩阵
@@ -190,7 +124,6 @@ void prepareCamera()
 	cameraControl->setCamera(camera);
 
 };
-
 
 int main()
 {
@@ -220,36 +153,25 @@ int main()
 
 	//画布清理颜色
 	GL_CALL(glClearColor(0.2f, 0.3f, 0.3f, 0.1f));
-
-	//创建vao
-	prepareVao();
-
-	//深度测试
-	perpareState();
-
-	//创建Shader
-	prepareShader();
-
-	//读取纹理
-	prepareTexture();
 	
 	//设置摄像机矩阵
 	prepareCamera();
 
+	//
+	prepare();
+
 	//执行窗体循环
 	while (Application::getInstance()->update())
 	{
-		dotransform();
+		//模型变换
+		float angleDegrees = 0.1f;
+		glm::vec3 axis = glm::vec3(-1.0, 1.0, 1.0);
+		meshes[0]->rotateArbitraryAxis(angleDegrees, axis);
+
 		cameraControl->update();
 		//绘制
-		render();
-
-
+		render->render(meshes, camera, dirLight, ambientLight);
 	}
-
-	//清理操作
-	delete nanali_texture;
-	delete xiaoju_texture;
 
 	Application::getInstance()->destroy();
 

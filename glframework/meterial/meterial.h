@@ -7,8 +7,10 @@
 #include <glm/gtc/type_ptr.hpp>
 #include <vector>
 
+//枚举类
 enum class MeterialType
 {
+	//类型一
 	PhoneMeterial
 };
 
@@ -20,6 +22,5 @@ public:
 	~Meterial();
 
 public:
-
 	MeterialType mType;
 };

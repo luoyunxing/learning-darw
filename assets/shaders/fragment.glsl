@@ -1,11 +1,11 @@
 #version 460 core
 out vec4 FragColor;
-in vec3 color;
 in vec2 uv;
 in vec3 normal;
 in vec3 worldposition;
 
 // 纹理
+uniform sampler2D sampler;
 uniform sampler2D nanali_sampler;
 uniform sampler2D xiaoju_sampler;
 uniform sampler2D earth_sampler;
@@ -21,9 +21,6 @@ uniform float Instensity;
 uniform float LightEdge;
 uniform float FresnelPower;
 
-//
-uniform float time;
-uniform vec3 uColor;
 uniform vec3 CameraPosition;
 
 void main() {
@@ -35,6 +32,7 @@ void main() {
   vec4 nanali_Color = texture(nanali_sampler, uv);
   vec4 xiaoju_Color = texture(xiaoju_sampler, uv);
   vec4 earth_Color = texture(earth_sampler, uv);
+  vec4 sampler = texture(sampler, uv);
   vec4 mix_Color = nanali_Color * 0.2 + xiaoju_Color * 0.8;
 
   // 物体颜色
