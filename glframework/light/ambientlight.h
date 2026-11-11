@@ -1,7 +1,7 @@
 #pragma once
 #include "light.h"
 
-class AmbientLight : public Light
+class AmbientLight 
 {
 public:
 	AmbientLight();
@@ -11,6 +11,5 @@ public:
 	glm::float32 mSpotSize{ 32.0f };
 	glm::float32 mLightEdge{ 0.6f };
 	glm::float32 mFresnelPower{ 1.0f };
-
-	//float mSpecularIntensity{ 0.05f };
+	glm::float32 mSpecularIntensity{ 0.05f };
 };

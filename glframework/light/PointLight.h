@@ -14,7 +14,9 @@ public:
     }
     ~PointLight();
 
-
+    //位置颜色
+    glm::vec3 mPosition;
+    glm::vec3 mColor;     
     // 衰减系数
     float mConstant;
     float mLinear;

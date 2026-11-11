@@ -24,15 +24,7 @@ public:
 	void render(
 		const std::vector<Mesh*>& meshes,
 		Camera* camera,
-		DirectionLight* dirLight,
-		AmbientLight* ambientLight,
-		PointLight* pointLight
-		);
-
-	void render1(
-		const std::vector<Mesh*>& meshes,
-		Camera* camera,
-		Light* Light,
+		const std::vector<Light::LightData>& lights,
 		AmbientLight* ambientLight
 		);
 
@@ -44,4 +36,5 @@ private:
 	//根据材质类型的选择不同shader
 	Shader* mPhongShader{ nullptr };
 	Shader* mWhiteShader{ nullptr };
+	Shader* mCyanShader{ nullptr };
 };

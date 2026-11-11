@@ -24,7 +24,9 @@
 #include "glframework/light/PointLight.h"
 #include "glframework/light/light.h"
 #include "glframework/light/spotLight.h"
+#include "glframework/meterial/cyanmeterial.h"
 
+std::vector <Light::LightData> sceneLights;
 Light* currentLight = nullptr;
 Render* render = nullptr;
 AmbientLight* ambientLight = nullptr;
@@ -123,57 +125,48 @@ void prepare()
 	geometrySun = Geometry::createSphere(0.5f);
 	WhiteMeterial* meterial03 = new WhiteMeterial();
 	Mesh* mesh03 = new Mesh(geometrySun, meterial03);
-
-	// 注意这里：我们先把它放在原点，等下面确定了灯光位置后，再把它移到灯光处
-	mesh03->setPosition(glm::vec3(0.0f));
+	//点光源位置
+	mesh03->setPosition(glm::vec3(0.0f, 5.0f, 0.0f));
 	meshes.push_back(mesh03);
 
-	// ==========================================
-	// 2. 创建灯光（重点修改部分）
-	// ==========================================
+	// 创建青色材质 (太阳/灯泡)
+	Geometry* geometrySpot = nullptr;
+	geometrySpot = Geometry::createSphere(0.2f);
+	CyanMaterial* meterial04 = new CyanMaterial();
+	Mesh* mesh04 = new Mesh(geometrySpot, meterial04);
+	//探照灯光源位置
+	mesh04->setPosition(glm::vec3(5.0f, 5.0f, 5.0f));
+	meshes.push_back(mesh04);
 
-	// 因为我们现在使用多态，整个工程里只需要一个通用的 Light* 指针即可
-	// 假设你的 main.cpp 全局变量里定义的是： Light* currentLight;
-
-    // ██████████████████████████████████████████████████████████████
-    // █               平行光                            █
-	// ██████████████████████████████████████████████████████████████
+	// 1. 添加一个平行光（比如太阳光）
+	Light::LightData dirLight;
+	dirLight.type = 0;
+	dirLight.direction = glm::vec3(-1.0f, -1.0f, -1.0f);
+	dirLight.color = glm::vec3(0.3f, 0.3f, 0.3f); // 稍微弱一点
+	sceneLights.push_back(dirLight);
 	
-	//DirectionLight* dirLight = new DirectionLight();
-	//dirLight->mDirection = glm::vec3(-1.0f, -1.0f, -1.0f);
-	//dirLight->mColor = glm::vec3(1.0f, 1.0f, 1.0f);
-	//currentLight = dirLight;
-	
-	// ██████████████████████████████████████████████████████████████
-	// █               点光源                         █
-	// ██████████████████████████████████████████████████████████████
+	// 2. 添加一个点光源（比如在原点上方）
+	Light::LightData pointLight;
+	pointLight.type = 1;
+	pointLight.position = mesh03->getPosition();
+	pointLight.color = glm::vec3(1.0f, 0.9f, 0.8f);
+	pointLight.constant = 1.0f;
+	pointLight.linear = 0.09f;
+	pointLight.quadratic = 0.032f;
+	sceneLights.push_back(pointLight);
 
-	PointLight* pointLight = new PointLight();
-	pointLight->mPosition = glm::vec3(0.0f, 5.0f, 0.0f); // 放在上方 5 的位置
-	pointLight->mColor = glm::vec3(1.0f, 0.95f, 0.8f);   // 偏暖色的光
-	// 调整衰减参数（如果觉得光照不到地面，可以把 linear 和 quadratic 改小）
-	pointLight->mConstant = 1.0f;
-	pointLight->mLinear = 0.09f;
-	pointLight->mQuadratic = 0.032f;
-	currentLight = pointLight;
-
-	//把那个白色小球（太阳）移动到点光源的位置，这样就能直观看到光源在哪了
-	mesh03->setPosition(pointLight->mPosition);
-
-
-	// ██████████████████████████████████████████████████████████████
-	// █               探照灯                          █
-	// ██████████████████████████████████████████████████████████████
-	
-	//SpotLight* spotLight = new SpotLight();
-	//spotLight->mPosition = glm::vec3(0.0f, 8.0f, 0.0f); // 放在高处
-	//spotLight->mDirection = glm::vec3(0.0f, -1.0f, 0.0f); // 垂直向下照
-	//spotLight->mCutOff = glm::cos(glm::radians(12.5f));
-	//spotLight->mOuterCutOff = glm::cos(glm::radians(17.5f));
-	//spotLight->mColor = glm::vec3(1.0f, 1.0f, 1.0f);
-	//currentLight = spotLight;
-	// 
-	//mesh03->setPosition(spotLight->mPosition); // 移动太阳到探照灯位置
+	// 3. 添加一个探照灯（比如从侧面照射）
+	Light::LightData spotLight;
+	spotLight.type = 2;
+	spotLight.position = mesh04->getPosition();
+	spotLight.direction = glm::normalize(glm::vec3(-5.0f, -5.0f, -5.0f));
+	spotLight.color = glm::vec3(0.0f, 1.0f, 1.0f); // 青色光
+	spotLight.constant = 1.0f;
+	spotLight.linear = 0.09f;
+	spotLight.quadratic = 0.032f;
+	spotLight.cutOff = glm::cos(glm::radians(12.5f));
+	spotLight.outerCutOff = glm::cos(glm::radians(17.5f));
+	sceneLights.push_back(spotLight);
 
 	//环境光
 	ambientLight = new AmbientLight();
@@ -258,7 +251,7 @@ int main()
 		cameraControl->update();
 		//绘制
 		//render->render(meshes, camera, dirLight, ambientLight);
-		render->render1(meshes, camera, currentLight, ambientLight);
+		render->render(meshes, camera, sceneLights, ambientLight);
 	}
 
 	Application::getInstance()->destroy();

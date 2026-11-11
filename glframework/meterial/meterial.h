@@ -12,7 +12,8 @@ enum class MeterialType
 {
 	//类型一
 	PhoneMeterial,
-	WhiteMeterial
+	WhiteMeterial,
+	CyanMeterial
 };
 
 class Meterial

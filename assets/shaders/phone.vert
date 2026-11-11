@@ -11,15 +11,17 @@ uniform mat3 normalMatrix;
 
 out vec2 uv;
 out vec3 normal;
-out vec3 worldposition;
+out vec3 worldposition; // 真正的世界坐标
 
 void main() {
-  vec4 transformPosition = modelMatrix * vec4(aPos, 1.0);
-  transformPosition = projectionMatrix * viewMatrix * transformPosition;
-  gl_Position = transformPosition;
+  // 1. 先算出世界坐标（用于后续光照计算和相机视线计算）
+  vec4 worldPos = modelMatrix * vec4(aPos, 1.0);
+  worldposition = worldPos.xyz;
 
-  // 将数据传入fragmentSharer
-  worldposition = transformPosition.xyz;
+  // 2. 再算出裁剪空间坐标（用于最终渲染输出）
+  gl_Position = projectionMatrix * viewMatrix * worldPos;
+
+  // 3. 将数据传入 fragmentShader
   uv = aUV;
   normal = normalMatrix * aNormal;
 }

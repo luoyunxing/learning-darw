@@ -23,8 +23,20 @@ public:
 	// 当前灯光的类型（子类构造时需指定）
 	LightType mLightType{};
 
-	// 通用属性
-	glm::vec3 mColor{ 1.0f, 0.98f, 0.96f }; // 光的颜色
-	glm::vec3 mPosition{ 0.0f, 0.0f, 0.0f }; // 灯的位置 (平行光用不到，但点光源和探照灯必须用)
-	float mSpecularIntensity{ 0.05f };       // 高光强度
+    // 这个结构体用于在 C++ 和 Shader 之间传递统一的灯光数据
+    struct LightData {
+        int type;           // 灯光类型
+        glm::vec3 position; // 位置 (平行光忽略)
+        glm::vec3 direction;// 方向 (平行光/探照灯使用)
+        glm::vec3 color;    // 颜色
+
+        // 衰减
+        float constant;
+        float linear;
+        float quadratic;
+
+        // 探照灯角度
+        float cutOff;
+        float outerCutOff;
+    };
 };

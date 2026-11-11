@@ -13,4 +13,6 @@ public:
 
 public:
 	glm::vec3 mDirection{ -1.0f };
+
+	glm::vec3 mColor{ 1.0f, 1.0f, 1.0f };
 };
