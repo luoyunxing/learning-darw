@@ -17,6 +17,8 @@ public:
 
 	//设置初始位置（基于世界坐标系下）
 	void setPosition(glm::vec3 Pos);
+	//获取初始位置
+	glm::vec3 getPosition();
 
 	//增量变换 ， 初始旋转角度（基于自身）
 	void setAngleX(float angle);

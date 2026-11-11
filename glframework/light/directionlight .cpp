@@ -1,10 +1,8 @@
-#include "DirectionLight.h"
+#include "directionLight.h"
 
-DirectionLight::DirectionLight()
-{
 
-}
+
+// 必须要有这行！
 DirectionLight::~DirectionLight()
 {
-
 }

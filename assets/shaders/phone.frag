@@ -24,19 +24,15 @@ uniform float FresnelPower;
 uniform vec3 CameraPosition;
 
 void main() {
-  // float intensity = (sin(time)+1.0)/2.0;
-  // FragColor = vec4(vec3(intensity)+color, 1.0f);
-  // FragColor = texture(nanali_sampler , uv);
-
   // 贴图纹理
   vec4 nanali_Color = texture(nanali_sampler, uv);
   vec4 xiaoju_Color = texture(xiaoju_sampler, uv);
   vec4 earth_Color = texture(earth_sampler, uv);
-  vec4 sampler = texture(sampler, uv);
+  vec4 sampler_Color = texture(sampler, uv);
   vec4 mix_Color = nanali_Color * 0.2 + xiaoju_Color * 0.8;
 
   // 物体颜色
-  vec3 ObjectColor = earth_Color.xyz;
+  vec3 ObjectColor = sampler_Color.xyz;
 
   // 环境光
   vec3 ambientColor = ObjectColor * AmbientColor;

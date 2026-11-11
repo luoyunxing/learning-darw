@@ -1,3 +1,3 @@
 
 #pragma once
-#define ENABLE_CAMERA_CODE 0
+#define ENABLE_CAMERA_CODE 1

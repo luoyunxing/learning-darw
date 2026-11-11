@@ -14,6 +14,12 @@ void Object::setPosition(glm::vec3 Pos)
 	mPosition = Pos;
 }
 
+//获取初始位置
+glm::vec3 Object::getPosition()
+{
+	return mPosition;
+}
+
 void Object::setAngleX(float angle)
 {
 	mAngleX += angle;

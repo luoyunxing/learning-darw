@@ -4,7 +4,11 @@
 class DirectionLight : public Light
 {
 public:
-	DirectionLight();
+
+	DirectionLight() {
+		mLightType = LightType::Directional; // 自动标识为平行光
+	}
+
 	~DirectionLight();
 
 public:

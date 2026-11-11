@@ -17,13 +17,16 @@
 #include "application/camera/gameCameraControl.h"
 #include "glframework/geometry.h"
 #include "glframework/meterial/phonemeterial.h"
+#include "glframework/meterial/whitemeterial.h"
 #include "glframework/object.h"
 #include "glframework/mesh.h"
 #include "glframework/render/render.h"
+#include "glframework/light/PointLight.h"
+#include "glframework/light/light.h"
+#include "glframework/light/spotLight.h"
 
+Light* currentLight = nullptr;
 Render* render = nullptr;
-Geometry* geometry = nullptr;
-DirectionLight* dirLight = nullptr;
 AmbientLight* ambientLight = nullptr;
 std::vector<Mesh*> meshes{};
 perspectivegraphicCamera* camera = nullptr;
@@ -90,18 +93,105 @@ void scrollCallback(double xoffset, double yoffset)
 
 void prepare()
 {
+	Geometry* geometry = nullptr;
+	Geometry* geometryBox = nullptr;
 	render = new Render();
-	//创建几何体
-	geometry = Geometry::createSphere(3.0f);
-	//创建材质
-	PhoneMeterial* meterial = new PhoneMeterial();
-	meterial->mDiffuse = new Texture("assets/texture/earth.png", 0);
 
-	//装入mesh等待渲染
-	Mesh* mesh = new Mesh(geometry, meterial);
-	meshes.push_back(mesh);
-	dirLight = new DirectionLight();
+	// ==========================================
+	// 1. 创建几何体和材质（这部分保持不变）
+	// ==========================================
+	geometry = Geometry::createSphere(3.0f);
+	geometryBox = Geometry::createBox(6.0f);
+
+	// 材质1
+	PhoneMeterial* meterial01 = new PhoneMeterial();
+	meterial01->mDiffuse = new Texture("assets/texture/earth.png", 0);
+
+	// 材质2
+	PhoneMeterial* meterial02 = new PhoneMeterial();
+	meterial02->mDiffuse = new Texture("assets/texture/xiaojuzhihua.png", 0);
+
+	// 装入mesh等待渲染
+	Mesh* mesh01 = new Mesh(geometry, meterial01);
+	Mesh* mesh02 = new Mesh(geometryBox, meterial02);
+
+	meshes.push_back(mesh01);
+	meshes.push_back(mesh02);
+
+	// 创建白色材质 (太阳/灯泡)
+	Geometry* geometrySun = nullptr;
+	geometrySun = Geometry::createSphere(0.5f);
+	WhiteMeterial* meterial03 = new WhiteMeterial();
+	Mesh* mesh03 = new Mesh(geometrySun, meterial03);
+
+	// 注意这里：我们先把它放在原点，等下面确定了灯光位置后，再把它移到灯光处
+	mesh03->setPosition(glm::vec3(0.0f));
+	meshes.push_back(mesh03);
+
+	// ==========================================
+	// 2. 创建灯光（重点修改部分）
+	// ==========================================
+
+	// 因为我们现在使用多态，整个工程里只需要一个通用的 Light* 指针即可
+	// 假设你的 main.cpp 全局变量里定义的是： Light* currentLight;
+
+    // ██████████████████████████████████████████████████████████████
+    // █               平行光                            █
+	// ██████████████████████████████████████████████████████████████
+	
+	//DirectionLight* dirLight = new DirectionLight();
+	//dirLight->mDirection = glm::vec3(-1.0f, -1.0f, -1.0f);
+	//dirLight->mColor = glm::vec3(1.0f, 1.0f, 1.0f);
+	//currentLight = dirLight;
+	
+	// ██████████████████████████████████████████████████████████████
+	// █               点光源                         █
+	// ██████████████████████████████████████████████████████████████
+
+	PointLight* pointLight = new PointLight();
+	pointLight->mPosition = glm::vec3(0.0f, 5.0f, 0.0f); // 放在上方 5 的位置
+	pointLight->mColor = glm::vec3(1.0f, 0.95f, 0.8f);   // 偏暖色的光
+	// 调整衰减参数（如果觉得光照不到地面，可以把 linear 和 quadratic 改小）
+	pointLight->mConstant = 1.0f;
+	pointLight->mLinear = 0.09f;
+	pointLight->mQuadratic = 0.032f;
+	currentLight = pointLight;
+
+	//把那个白色小球（太阳）移动到点光源的位置，这样就能直观看到光源在哪了
+	mesh03->setPosition(pointLight->mPosition);
+
+
+	// ██████████████████████████████████████████████████████████████
+	// █               探照灯                          █
+	// ██████████████████████████████████████████████████████████████
+	
+	//SpotLight* spotLight = new SpotLight();
+	//spotLight->mPosition = glm::vec3(0.0f, 8.0f, 0.0f); // 放在高处
+	//spotLight->mDirection = glm::vec3(0.0f, -1.0f, 0.0f); // 垂直向下照
+	//spotLight->mCutOff = glm::cos(glm::radians(12.5f));
+	//spotLight->mOuterCutOff = glm::cos(glm::radians(17.5f));
+	//spotLight->mColor = glm::vec3(1.0f, 1.0f, 1.0f);
+	//currentLight = spotLight;
+	// 
+	//mesh03->setPosition(spotLight->mPosition); // 移动太阳到探照灯位置
+
+	//环境光
 	ambientLight = new AmbientLight();
+	ambientLight->mAmbientColor = glm::vec3(0.2f, 0.2f, 0.2f); 
+	ambientLight->mSpecularIntensity = 0.5f;
+	ambientLight->mSpotSize = 32.0f;
+	ambientLight->mLightEdge = 0.2f;
+	ambientLight->mFresnelPower = 5.0f;
+}
+
+void dotransform()
+{
+	//模型变换
+	float angleDegrees = 0.1f;
+	glm::vec3 axis = glm::vec3(-1.0, 1.0, 1.0);
+	meshes[0]->rotateArbitraryAxis(angleDegrees, axis);
+
+	meshes[1]->setPosition(glm::vec3(8.0f, 0.0f, 0.0f));
 }
 
 //设置摄像机矩阵
@@ -128,7 +218,7 @@ void prepareCamera()
 int main()
 {
 	//初始化
-	if (!Application::getInstance()->init(800, 600))
+	if (!Application::getInstance()->init(1200, 900))
 	{
 		return -1;
 	}
@@ -149,7 +239,7 @@ int main()
 	Application::getInstance()->setScrollCallback(scrollCallback);
 
 	//设置OpenGL视口
-	GL_CALL(glViewport(0, 0, 800, 600));
+	GL_CALL(glViewport(0, 0, 1200, 900));
 
 	//画布清理颜色
 	GL_CALL(glClearColor(0.2f, 0.3f, 0.3f, 0.1f));
@@ -164,13 +254,11 @@ int main()
 	while (Application::getInstance()->update())
 	{
 		//模型变换
-		float angleDegrees = 0.1f;
-		glm::vec3 axis = glm::vec3(-1.0, 1.0, 1.0);
-		meshes[0]->rotateArbitraryAxis(angleDegrees, axis);
-
+		dotransform();
 		cameraControl->update();
 		//绘制
-		render->render(meshes, camera, dirLight, ambientLight);
+		//render->render(meshes, camera, dirLight, ambientLight);
+		render->render1(meshes, camera, currentLight, ambientLight);
 	}
 
 	Application::getInstance()->destroy();

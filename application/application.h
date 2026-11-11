@@ -23,7 +23,7 @@ public:
 	//用于访问实例的静态函数
 	static Application* getInstance();
 
-	bool init(const int& width = 800, const int& height = 600);
+	bool init(const int& width = 1200, const int& height = 900);
 
 	bool update();
 
