@@ -46,102 +46,119 @@ Shader* Render::pickShader(MeterialType type)
 
 
 void Render::render(
-	const std::vector<Mesh*>& meshes,
+	Scene* scene,
+	Camera* camera,
+	const std::vector<Light::LightData>& lights,
+	AmbientLight* ambientLight
+)
+{
+	//首先设置OpenGL状态机必要参数
+	glEnable(GL_DEPTH_TEST);
+	glDepthFunc(GL_LESS);
+	//画布清理
+	GL_CALL(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));
+
+	// 从场景的根节点开始递归渲染
+	renderNode(scene, camera, lights, ambientLight);
+}
+
+
+void Render::renderNode(
+	Object* node,
 	Camera* camera,
 	const std::vector<Light::LightData>& lights,              // 统一
 	AmbientLight* ambientLight
 )
-{//首先设置OpenGL状态机必要参数
-	glEnable(GL_DEPTH_TEST);
-	glDepthFunc(GL_LESS);
+{
+	//不为挂载（空）节点
+	if (!node) return;
 
-	//画布清理
-	GL_CALL(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));
 
-	//遍历mesh进行绘制
-	for (int i = 0; i < meshes.size(); i++)
+	//使用类型枚举判断，替代 dynamic_cast
+	if (node->mType == ObjectType::Mesh)
 	{
-		Mesh* mesh = meshes[i];
-		Geometry* geometry = mesh->mGemetry;
-		Meterial* meterial = mesh->mMeterial;
-
-		//决定使用那个shader
-		Shader* shader = pickShader(meterial->mType);
-		if (!shader) continue;
-
-		//更新该shader的uniform变量
-		shader->begin();
-
-		//判断mesh材质类型
-		switch (meterial->mType)
+		// 既然已经确定了它是 Mesh，就可以安全地进行静态转换（static_cast 几乎不消耗性能）
+		Mesh* mesh = static_cast<Mesh*>(node);
+		if (mesh->mMeterial)
 		{
-		case MeterialType::PhoneMeterial:
-		{
-			PhoneMeterial* PhoneMat = (PhoneMeterial*)meterial;
-			shader->setInt("sampler", 0);
-			if (PhoneMat->mDiffuse) PhoneMat->mDiffuse->bind();
+			Geometry* geometry = mesh->mGemetry;
+			Meterial* meterial = mesh->mMeterial;
+			//判断mesh材质类型
+			Shader* shader = pickShader(meterial->mType);
 
-			// ==========================================
-			// 统一处理灯光传参
-			// ==========================================
-			shader->setInt("numLights", lights.size());
-
-			for (int j = 0; j < lights.size(); j++) 
+			if (shader)
 			{
-				std::string prefix = "lights[" + std::to_string(j) + "].";
-				shader->setInt(prefix + "type", lights[j].type);
-				shader->setVector3(prefix + "position", lights[j].position);
-				shader->setVector3(prefix + "direction", lights[j].direction);
-				shader->setVector3(prefix + "color", lights[j].color);
-				shader->setFloat(prefix + "constant", lights[j].constant);
-				shader->setFloat(prefix + "linear", lights[j].linear);
-				shader->setFloat(prefix + "quadratic", lights[j].quadratic);
-				shader->setFloat(prefix + "cutOff", lights[j].cutOff);
-				shader->setFloat(prefix + "outerCutOff", lights[j].outerCutOff);
+				//更新shader uniform变量
+				shader->begin();
+
+				switch (meterial->mType)
+				{
+				case MeterialType::PhoneMeterial:
+				{
+					PhoneMeterial* PhoneMat = (PhoneMeterial*)meterial;
+					shader->setInt("sampler", 0);
+					if (PhoneMat->mDiffuse) PhoneMat->mDiffuse->bind();
+
+					shader->setInt("numLights", lights.size());
+					//点光源，探照灯
+					for (int j = 0; j < lights.size(); j++)
+					{
+						std::string prefix = "lights[" + std::to_string(j) + "].";
+						shader->setInt(prefix + "type", lights[j].type);
+						shader->setVector3(prefix + "position", lights[j].position);
+						shader->setVector3(prefix + "direction", lights[j].direction);
+						shader->setVector3(prefix + "color", lights[j].color);
+						shader->setFloat(prefix + "constant", lights[j].constant);
+						shader->setFloat(prefix + "linear", lights[j].linear);
+						shader->setFloat(prefix + "quadratic", lights[j].quadratic);
+						shader->setFloat(prefix + "cutOff", lights[j].cutOff);
+						shader->setFloat(prefix + "outerCutOff", lights[j].outerCutOff);
+					}
+
+					//菲涅尔高光参数
+					if (ambientLight) {
+						shader->setVector3("AmbientColor", ambientLight->mAmbientColor);
+						shader->setFloat("Instensity", ambientLight->mSpecularIntensity);
+						shader->setFloat("SpotSize", ambientLight->mSpotSize);
+						shader->setFloat("LightEdge", ambientLight->mLightEdge);
+						shader->setFloat("FresnelPower", ambientLight->mFresnelPower);
+					}
+					//模型矩阵
+					shader->setMatrix44("modelMatrix", mesh->getmodelMatrix());
+					//法线矩阵
+					glm::mat3 normalMatrix = glm::transpose(glm::inverse(glm::mat3(mesh->getmodelMatrix())));
+					shader->setMatrix33("normalMatrix", normalMatrix);
+				}
+				break;
+				//白色灯泡颜色参数
+				case MeterialType::WhiteMeterial:
+					shader->setVector3("ObjectColor", meterial->mColor);
+					//模型矩阵
+					shader->setMatrix44("modelMatrix", mesh->getmodelMatrix());
+					break;
+					//青色灯泡参数
+				case MeterialType::CyanMeterial:
+					shader->setVector3("ObjectColor", meterial->mColor);
+					//模型矩阵
+					shader->setMatrix44("modelMatrix", mesh->getmodelMatrix());
+					break;
+				}
+
+				//相机参数统一上传
+				shader->setVector3("CameraPosition", camera->mPosition);
+				shader->setMatrix44("viewMatrix", camera->getViewMatrix());
+				shader->setMatrix44("projectionMatrix", camera->getprojectionMatrix());
+
+				// 绘制
+				GL_CALL(glBindVertexArray(geometry->getVao()));
+				glDrawElements(GL_TRIANGLES, geometry->getIndicesCount(), GL_UNSIGNED_INT, 0);
 			}
+		}
+	}
 
-			//菲涅尔高光参数
-			shader->setVector3("AmbientColor", ambientLight->mAmbientColor);
-			shader->setFloat("Instensity", ambientLight->mSpecularIntensity);
-			shader->setFloat("SpotSize", ambientLight->mSpotSize);
-			shader->setFloat("LightEdge", ambientLight->mLightEdge);
-			shader->setFloat("FresnelPower", ambientLight->mFresnelPower);
-
-			//相机矩阵
-			shader->setVector3("CameraPosition", camera->mPosition); //相机位置
-			shader->setMatrix44("viewMatrix", camera->getViewMatrix());
-			shader->setMatrix44("projectionMatrix", camera->getprojectionMatrix());
-			//模型矩阵
-			shader->setMatrix44("modelMatrix", mesh->getmodelMatrix());
-			//法线矩阵
-			glm::mat3 normalMatrix = glm::transpose(glm::inverse(glm::mat3(mesh->getmodelMatrix())));
-			shader->setMatrix33("normalMatrix", normalMatrix);
-		}
-		break;
-		case MeterialType::WhiteMeterial:
-		{
-			shader->setVector3("CameraPosition", camera->mPosition);
-			shader->setMatrix44("viewMatrix", camera->getViewMatrix());
-			shader->setMatrix44("projectionMatrix", camera->getprojectionMatrix());
-			shader->setMatrix44("modelMatrix", mesh->getmodelMatrix());
-			shader->setVector3("ObjectColor", meterial->mColor);
-		}
-		break;
-		case MeterialType::CyanMeterial:
-		{
-			shader->setVector3("CameraPosition", camera->mPosition);
-			shader->setMatrix44("viewMatrix", camera->getViewMatrix());
-			shader->setMatrix44("projectionMatrix", camera->getprojectionMatrix());
-			shader->setMatrix44("modelMatrix", mesh->getmodelMatrix());
-			shader->setVector3("ObjectColor", meterial->mColor);
-		}
-		break;
-		default:
-			continue;
-		}
-
-		//绑定vao
-		GL_CALL(glBindVertexArray(geometry->getVao()));
-		glDrawElements(GL_TRIANGLES, geometry->getIndicesCount(), GL_UNSIGNED_INT, 0);
+	//递归查找子节点
+	for (Object* child : node->getChildren())
+	{
+		renderNode(child, camera, lights, ambientLight);
 	}
 }

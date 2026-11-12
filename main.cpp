@@ -28,13 +28,22 @@
 #include "imgui/imgui.h"
 #include "imgui/imgui_impl_glfw.h"
 #include "imgui/imgui_impl_opengl3.h"
+#include "glframework/scene.h"
 
+Scene* rootScene = nullptr; // 场景根节点
 std::vector <Light::LightData> sceneLights;
 Light* currentLight = nullptr;
 Render* render = nullptr;
 AmbientLight* ambientLight = nullptr;
-std::vector<Mesh*> meshes{};
 perspectivegraphicCamera* camera = nullptr;
+
+//mesh中的材质通过全局变量控制
+WhiteMeterial* g_whiteMat = nullptr;
+CyanMaterial* g_cyanMat = nullptr;
+
+//mesh中的dotransform通过全局变量控制
+Mesh* g_meshEarth = nullptr; // 地球
+Mesh* g_meshBox = nullptr;   // 方块
 
 //灯光调色
 glm::vec3 whiteColor = glm::vec3(1.0f, 1.0f, 1.0f);
@@ -49,7 +58,7 @@ GameCameraControl* cameraControl = nullptr;
 #endif
 
 // ██████████████████████████████████████████████████████████████
-// █                        这些已经没用了，到后面直接用mgui                         █
+// █                        这些已经没用了，留着看参数，到后面直接用mgui                         █
 // ██████████████████████████████████████████████████████████████
 glm::vec3 LightDirection = glm::vec3(-1.0f, -1.0f, -1.0f);  // 平行光方向
 glm::vec3 LightColor = glm::vec3(1.0f, 0.98f, 0.96f);   // 主光
@@ -102,13 +111,13 @@ void scrollCallback(double xoffset, double yoffset)
 
 void prepare()
 {
+
+	rootScene = new Scene(); // 初始化场景
 	Geometry* geometry = nullptr;
 	Geometry* geometryBox = nullptr;
 	render = new Render();
 
-	// ==========================================
-	// 1. 创建几何体和材质（这部分保持不变）
-	// ==========================================
+	// 1. 创建几何体和材质
 	geometry = Geometry::createSphere(3.0f);
 	geometryBox = Geometry::createBox(6.0f);
 
@@ -120,33 +129,29 @@ void prepare()
 	PhoneMeterial* meterial02 = new PhoneMeterial();
 	meterial02->mDiffuse = new Texture("assets/texture/xiaojuzhihua.png", 0);
 
-	// 装入mesh等待渲染
-	Mesh* mesh01 = new Mesh(geometry, meterial01);
-	Mesh* mesh02 = new Mesh(geometryBox, meterial02);
+	//创建 Mesh 并挂载到场景根节点
+	g_meshEarth = new Mesh(geometry, meterial01);
+	g_meshBox = new Mesh(geometryBox, meterial02);
 
-	meshes.push_back(mesh01);
-	meshes.push_back(mesh02);
+	// 同级别挂在场景下
+	rootScene->addChild(g_meshEarth);
+	rootScene->addChild(g_meshBox);
 
-	// 创建白色材质 (太阳/灯泡)
-	Geometry* geometrySun = nullptr;
-	geometrySun = Geometry::createSphere(0.5f);
-	WhiteMeterial* meterial03 = new WhiteMeterial();
-	//材质颜色
-	meterial03->mColor = whiteColor;  
-	Mesh* mesh03 = new Mesh(geometrySun, meterial03);
-	mesh03->setPosition(glm::vec3(0.0f, 5.0f, 0.0f));//点光源位置
-	meshes.push_back(mesh03);
-
-	// 创建青色材质 (太阳/灯泡)
-	Geometry* geometrySpot = nullptr;
-	geometrySpot = Geometry::createSphere(0.2f);
-	CyanMaterial* meterial04 = new CyanMaterial();
-	//材质颜色
-	meterial04->mColor = cyanColor;
-	Mesh* mesh04 = new Mesh(geometrySpot, meterial04);
-	//探照灯光源位置
+	//白色点光源球
+	Geometry* geometrySun = Geometry::createSphere(0.5f);
+	g_whiteMat = new WhiteMeterial();
+	g_whiteMat->mColor = whiteColor;
+	Mesh* mesh03 = new Mesh(geometrySun, g_whiteMat);
+	mesh03->setPosition(glm::vec3(0.0f, 5.0f, 0.0f));
+	rootScene->addChild(mesh03); //挂载场景中
+	
+	// 青色探照灯球
+	Geometry* geometrySpot = Geometry::createSphere(0.2f);
+	g_cyanMat = new CyanMaterial();
+	g_cyanMat->mColor = cyanColor;
+	Mesh* mesh04 = new Mesh(geometrySpot, g_cyanMat);
 	mesh04->setPosition(glm::vec3(5.0f, 5.0f, 5.0f));
-	meshes.push_back(mesh04);
+	rootScene->addChild(mesh04);
 
 	// 1. 添加一个平行光（比如太阳光）
 	Light::LightData dirLight;
@@ -189,15 +194,9 @@ void prepare()
 
 void setColor()
 {
-	if (meshes.size() > 2) {
-		WhiteMeterial* whiteMat = static_cast<WhiteMeterial*>(meshes[2]->mMeterial);
-		whiteMat->mColor = whiteColor;
-	}
-
-	if (meshes.size() > 3) {
-		CyanMaterial* cyanMat = static_cast<CyanMaterial*>(meshes[3]->mMeterial);
-		cyanMat->mColor = cyanColor;
-	}
+	// 1. 更新材质（控制小球本身的颜色）
+	if (g_whiteMat) g_whiteMat->mColor = whiteColor;
+	if (g_cyanMat)  g_cyanMat->mColor = cyanColor;
 
 	//这里0是平行光    1 是点光源      2 是探照灯
 	if (sceneLights.size() > 1) {
@@ -258,12 +257,16 @@ void renderIMGUI()
 
 void dotransform()
 {
-	//模型变换
-	float angleDegrees = 0.1f;
-	glm::vec3 axis = glm::vec3(-1.0, 1.0, 1.0);
-	meshes[0]->rotateArbitraryAxis(angleDegrees, axis);
-
-	meshes[1]->setPosition(glm::vec3(8.0f, 0.0f, 0.0f));
+	//
+	if (g_meshEarth != nullptr) {
+		float angleDegrees = 0.1f;
+		glm::vec3 axis = glm::vec3(-1.0, 1.0, 1.0);
+		g_meshEarth->rotateArbitraryAxis(angleDegrees, axis);
+	}
+	// 2. 方块独立移动
+	if (g_meshBox != nullptr) {
+		g_meshBox->setPosition(glm::vec3(8.0f, 0.0f, 0.0f));
+	}
 }
 
 //设置摄像机矩阵
@@ -321,7 +324,6 @@ int main()
 
 	InitImgui();
 
-	//
 	prepare();
 
 	//执行窗体循环
@@ -330,7 +332,7 @@ int main()
 		setColor();
 		dotransform();
 		cameraControl->update();
-		render->render(meshes, camera, sceneLights, ambientLight);
+		render->render(rootScene, camera, sceneLights, ambientLight);
 		renderIMGUI();
 	}
 

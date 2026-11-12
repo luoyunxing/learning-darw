@@ -8,12 +8,18 @@
 #include <glm/gtc/type_ptr.hpp>
 #include <vector>
 
+enum class ObjectType
+{
+	Object,
+	Mesh,
+	Scene
+};
 
 class Object
 {
 public:
 	Object();
-	~Object();
+	virtual~Object();
 
 	//设置初始位置（基于世界坐标系下）
 	void setPosition(glm::vec3 Pos);
@@ -33,6 +39,14 @@ public:
 
 	//Object的模型变换
 	glm::mat4 getmodelMatrix();
+
+	//父子节点关系
+	void addChild(Object* obj);
+	std::vector<Object*> getChildren();
+	Object* getParent();
+
+	//类型标识
+	ObjectType mType{ ObjectType::Object };
 protected:
 	//模型初始位置（世界坐标系下）
 	glm::vec3 mPosition{ 0.0f };
@@ -47,4 +61,8 @@ protected:
 
 	//移动后的位置（基于世界坐标系）
 	glm::vec3 mScale{ 1.0f };
+
+	//父子节点关系
+	std::vector<Object*>  mChildren{ nullptr };
+	Object* mParent{ nullptr };
 };
