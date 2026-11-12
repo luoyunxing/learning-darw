@@ -42,7 +42,7 @@ protected:
 	float mCurrentX = 0.0f, mCurrentY = 0.0f;
 
 	//鼠标灵敏度
-	float mSensitivity = 0.2f;
+	float mSensitivity = 0.07f;
 	//平移灵敏度
 	float mMoveSpeed = 0.01f;
 

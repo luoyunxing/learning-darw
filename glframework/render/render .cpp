@@ -124,6 +124,7 @@ void Render::render(
 			shader->setMatrix44("viewMatrix", camera->getViewMatrix());
 			shader->setMatrix44("projectionMatrix", camera->getprojectionMatrix());
 			shader->setMatrix44("modelMatrix", mesh->getmodelMatrix());
+			shader->setVector3("ObjectColor", meterial->mColor);
 		}
 		break;
 		case MeterialType::CyanMeterial:
@@ -132,6 +133,7 @@ void Render::render(
 			shader->setMatrix44("viewMatrix", camera->getViewMatrix());
 			shader->setMatrix44("projectionMatrix", camera->getprojectionMatrix());
 			shader->setMatrix44("modelMatrix", mesh->getmodelMatrix());
+			shader->setVector3("ObjectColor", meterial->mColor);
 		}
 		break;
 		default:

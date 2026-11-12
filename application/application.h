@@ -29,6 +29,8 @@ public:
 
 	void destroy();
 
+	GLFWwindow* getWindow();
+
 	uint32_t getWidth()const { return m_Width; }
 	uint32_t getHeight()const { return m_Height; }
 	GLFWwindow* getWindow()const { return m_window; }

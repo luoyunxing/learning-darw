@@ -25,4 +25,5 @@ public:
 
 public:
 	MeterialType mType;
+	glm::vec3 mColor{ 1.0f, 1.0f, 1.0f };
 };

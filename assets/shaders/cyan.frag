@@ -5,4 +5,5 @@ in vec3 worldposition;
 
 //
 
-void main() { FragColor = vec4(0.0, 1.0, 1.0, 1.0); }
+uniform vec3 ObjectColor; // 新增颜色变量
+void main() { FragColor = vec4(ObjectColor, 1.0); }

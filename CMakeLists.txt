@@ -14,6 +14,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 add_subdirectory(wrapper)
 add_subdirectory(application)
 add_subdirectory(glframework)
+add_subdirectory(imgui)
 
 # 本工程所有.cpp文件编译链接，生成exe
 file(GLOB SOURCES "*.cpp")
@@ -47,4 +48,5 @@ target_link_libraries(${PROJECT_NAME}
         wrapper
         application
         glframework
+        imgui
 )

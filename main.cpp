@@ -25,6 +25,9 @@
 #include "glframework/light/light.h"
 #include "glframework/light/spotLight.h"
 #include "glframework/meterial/cyanmeterial.h"
+#include "imgui/imgui.h"
+#include "imgui/imgui_impl_glfw.h"
+#include "imgui/imgui_impl_opengl3.h"
 
 std::vector <Light::LightData> sceneLights;
 Light* currentLight = nullptr;
@@ -32,6 +35,10 @@ Render* render = nullptr;
 AmbientLight* ambientLight = nullptr;
 std::vector<Mesh*> meshes{};
 perspectivegraphicCamera* camera = nullptr;
+
+//灯光调色
+glm::vec3 whiteColor = glm::vec3(1.0f, 1.0f, 1.0f);
+glm::vec3 cyanColor = glm::vec3(0.0f, 1.0f, 1.0f);
 //轨迹球相机
 #if !ENABLE_CAMERA_CODE
 Trackballcameracontrol* cameraControl = nullptr;
@@ -124,15 +131,18 @@ void prepare()
 	Geometry* geometrySun = nullptr;
 	geometrySun = Geometry::createSphere(0.5f);
 	WhiteMeterial* meterial03 = new WhiteMeterial();
+	//材质颜色
+	meterial03->mColor = whiteColor;  
 	Mesh* mesh03 = new Mesh(geometrySun, meterial03);
-	//点光源位置
-	mesh03->setPosition(glm::vec3(0.0f, 5.0f, 0.0f));
+	mesh03->setPosition(glm::vec3(0.0f, 5.0f, 0.0f));//点光源位置
 	meshes.push_back(mesh03);
 
 	// 创建青色材质 (太阳/灯泡)
 	Geometry* geometrySpot = nullptr;
 	geometrySpot = Geometry::createSphere(0.2f);
 	CyanMaterial* meterial04 = new CyanMaterial();
+	//材质颜色
+	meterial04->mColor = cyanColor;
 	Mesh* mesh04 = new Mesh(geometrySpot, meterial04);
 	//探照灯光源位置
 	mesh04->setPosition(glm::vec3(5.0f, 5.0f, 5.0f));
@@ -149,7 +159,7 @@ void prepare()
 	Light::LightData pointLight;
 	pointLight.type = 1;
 	pointLight.position = mesh03->getPosition();
-	pointLight.color = glm::vec3(1.0f, 0.9f, 0.8f);
+	pointLight.color = whiteColor;
 	pointLight.constant = 1.0f;
 	pointLight.linear = 0.09f;
 	pointLight.quadratic = 0.032f;
@@ -160,7 +170,7 @@ void prepare()
 	spotLight.type = 2;
 	spotLight.position = mesh04->getPosition();
 	spotLight.direction = glm::normalize(glm::vec3(-5.0f, -5.0f, -5.0f));
-	spotLight.color = glm::vec3(0.0f, 1.0f, 1.0f); // 青色光
+	spotLight.color = cyanColor; // 青色光
 	spotLight.constant = 1.0f;
 	spotLight.linear = 0.09f;
 	spotLight.quadratic = 0.032f;
@@ -175,6 +185,75 @@ void prepare()
 	ambientLight->mSpotSize = 32.0f;
 	ambientLight->mLightEdge = 0.2f;
 	ambientLight->mFresnelPower = 5.0f;
+}
+
+void setColor()
+{
+	if (meshes.size() > 2) {
+		WhiteMeterial* whiteMat = static_cast<WhiteMeterial*>(meshes[2]->mMeterial);
+		whiteMat->mColor = whiteColor;
+	}
+
+	if (meshes.size() > 3) {
+		CyanMaterial* cyanMat = static_cast<CyanMaterial*>(meshes[3]->mMeterial);
+		cyanMat->mColor = cyanColor;
+	}
+
+	//这里0是平行光    1 是点光源      2 是探照灯
+	if (sceneLights.size() > 1) {
+		sceneLights[1].color = whiteColor; // 更新点光源颜色
+	}
+	if (sceneLights.size() > 2) {
+		sceneLights[2].color = cyanColor;  // 更新探照灯颜色
+	}
+}
+
+//初始化imgui
+void InitImgui()
+{
+	ImGui::CreateContext(); //创建imgui上下文
+	ImGui::StyleColorsDark();//选择黑色主题
+
+	//设置imgui与glfw和OpenGL的绑定
+	ImGui_ImplGlfw_InitForOpenGL(Application::getInstance()->getWindow(), true);
+	ImGui_ImplOpenGL3_Init("#version 460");
+}
+
+//绘制ui层
+void renderIMGUI()
+{
+	//开启当前IMGUI渲染
+	ImGui_ImplOpenGL3_NewFrame();
+	ImGui_ImplGlfw_NewFrame();
+	ImGui::NewFrame();
+
+	//决定当前的GUI上面有哪些控件，从上到下
+	ImGui::Begin("Hello,world!");
+
+	// 调色盘控件
+	ImGui::Text("White Ball Color");
+	if (ImGui::ColorEdit3("White Color", (float*)&whiteColor)) {
+		setColor(); // 颜色变化时实时更新材质
+	}
+
+	ImGui::Spacing();
+
+	ImGui::Text("Cyan Ball Color");
+	if (ImGui::ColorEdit3("Cyan Color", (float*)&cyanColor)) {
+		setColor(); // 颜色变化时实时更新材质
+	}
+
+	ImGui::End();
+
+	//执行ui渲染
+	ImGui::Render();
+	//获取当前窗口的宽高
+	int display_w, display_h;
+	glfwGetFramebufferSize(Application::getInstance()->getWindow(), &display_w, &display_h);
+	//重置视口大小
+	glViewport(0, 0, display_w, display_h);
+
+	ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 }
 
 void dotransform()
@@ -194,7 +273,7 @@ void prepareCamera()
 	camera = new perspectivegraphicCamera(60.0f, aspect, 0.1f, 1000.0f);
 
 	//决定初始位置
-	camera->mPosition = glm::vec3(0.0f, 0.0f, 6.0f);
+	camera->mPosition = glm::vec3(0.0f, 0.0f, 12.0f);
 
 #if !ENABLE_CAMERA_CODE
 	cameraControl = new Trackballcameracontrol();
@@ -211,7 +290,7 @@ void prepareCamera()
 int main()
 {
 	//初始化
-	if (!Application::getInstance()->init(1200, 900))
+	if (!Application::getInstance()->init(1600, 1200))
 	{
 		return -1;
 	}
@@ -232,7 +311,7 @@ int main()
 	Application::getInstance()->setScrollCallback(scrollCallback);
 
 	//设置OpenGL视口
-	GL_CALL(glViewport(0, 0, 1200, 900));
+	GL_CALL(glViewport(0, 0, 1600, 1200));
 
 	//画布清理颜色
 	GL_CALL(glClearColor(0.2f, 0.3f, 0.3f, 0.1f));
@@ -240,18 +319,19 @@ int main()
 	//设置摄像机矩阵
 	prepareCamera();
 
+	InitImgui();
+
 	//
 	prepare();
 
 	//执行窗体循环
 	while (Application::getInstance()->update())
 	{
-		//模型变换
+		setColor();
 		dotransform();
 		cameraControl->update();
-		//绘制
-		//render->render(meshes, camera, dirLight, ambientLight);
 		render->render(meshes, camera, sceneLights, ambientLight);
+		renderIMGUI();
 	}
 
 	Application::getInstance()->destroy();

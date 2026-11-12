@@ -22,6 +22,12 @@ Application::~Application()
 {
 
 }
+
+GLFWwindow* Application::getWindow()
+{
+	return m_window;
+}
+
 //初始化
 bool Application::init(const int & width , const int & height)
 {
